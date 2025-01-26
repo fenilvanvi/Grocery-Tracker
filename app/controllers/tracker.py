@@ -82,8 +82,9 @@ async def get_results_from_query(query: str, user_id: int):
         input_variables=["query"],
         template=(
             "You are a MongoDB query expert. Convert the following user query into a MongoDB query which can be passed"
-            " to the .find() method of pymongo library. Make sure to return only the MongoDB Query. "
-            "Don't use any extra text like ```json in the response."
+            " to the .aggregate() method of pymongo library. Add projections as necessary. "
+            "Replace null with None, if any. Make sure to return only the MongoDB Query.\n"
+            "NOTE: Don't use any extra text like ```json in the response.\n"
             "User Query: {query}\n"
             "MongoDB Collection Schema:\n"
             "{{"
@@ -104,7 +105,7 @@ async def get_results_from_query(query: str, user_id: int):
     logger.info(f"Generated MongoDB Query: {generated_query}")
     try:
         mongo_query = eval(generated_query)  # Safely parse the query
-        if not isinstance(mongo_query, dict):
+        if not isinstance(mongo_query, list):
             logger.error("Generated query is not a valid MongoDB query.")
             raise ValueError("Generated query is not a valid MongoDB query.")
     except Exception as e:
@@ -115,6 +116,6 @@ async def get_results_from_query(query: str, user_id: int):
     collection = db["groceries"]
 
     # Execute the query on the groceries collection
-    results = list(collection.find(mongo_query, {"_id": 0}))
+    results = list(collection.aggregate(mongo_query))
 
     return results
